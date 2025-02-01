@@ -32,10 +32,14 @@ async def submit_solution(submission: SubmissionRequest):
             lang=submission.language
         )
         
-        return {
-            "status": 1 if result.get("status_msg") == "Accepted" else 0,
-            "details": result
-        }
+        out = 1 if result.get("status_msg") == "Accepted" else 0
+        return out
+     
+        # return {
+        #     "status": 1 if result.get("status_msg") == "Accepted" else 0,
+        #     "details": result
+        # }
+    
     except Exception as e:
         print(f"Error details: {str(e)}")  
         raise HTTPException(status_code=500, detail=str(e))
