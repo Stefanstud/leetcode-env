@@ -1,16 +1,12 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel, BaseSettings
 from typing import Optional
 from leetcode_client import LeetCodeClient
-from leetcode_config import LEETCODE_SESSION, CSRF_TOKEN
+import os
 
-app = FastAPI(title="LeetCode Submission API")
-
-leetcode_client = LeetCodeClient(
-    session_cookie=LEETCODE_SESSION,
-    csrf_token=CSRF_TOKEN,
-    debug=False  
-)
+class Settings(BaseSettings):
+    leetcode_session: str = os.getenv("LEETCODE_SESSION")
+    csrf_token: str = os.getenv("CSRF_TOKEN")
 
 class SubmissionRequest(BaseModel):
     code: str
@@ -18,31 +14,43 @@ class SubmissionRequest(BaseModel):
     question_id: str
     language: Optional[str] = "python3"
 
-class SubmissionResponse(BaseModel):
-    status: bool
-    details: dict
+app = FastAPI(title="LeetCode Submission API")
+
+def get_leetcode_client():
+    settings = Settings()
+    return LeetCodeClient(
+        session_cookie=settings.leetcode_session,
+        csrf_token=settings.csrf_token,
+        debug=False
+    )
 
 @app.post("/submit")
-async def submit_solution(submission: SubmissionRequest):
+async def submit_solution(
+    submission: SubmissionRequest,
+    client: LeetCodeClient = Depends(get_leetcode_client)
+):
+    """Submit solution to LeetCode problem"""
     try:
-        result = leetcode_client.submit_solution(
+        result = client.submit_solution(
             code=submission.code,
             problem_slug=submission.problem_slug,
             question_id=submission.question_id,
             lang=submission.language
         )
         
-        out = 1 if result.get("status_msg") == "Accepted" else 0
-        return out
-     
-        # return {
-        #     "status": 1 if result.get("status_msg") == "Accepted" else 0,
-        #     "details": result
-        # }
+        return {
+            "accepted": result.get("status_msg") == "Accepted",
+            "runtime": result.get("status_runtime"),
+            "memory": result.get("status_memory"),
+            "total_testcases": result.get("total_testcases"),
+            "passed_testcases": result.get("total_correct")
+        }
     
     except Exception as e:
-        print(f"Error details: {str(e)}")  
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Submission failed: {str(e)}"
+        )
 
 if __name__ == "__main__":
     import uvicorn
