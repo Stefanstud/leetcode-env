@@ -95,7 +95,7 @@ def generate_problem():
     problem = PROBLEMS[current_index]
     current_index = (current_index + 1) % len(PROBLEMS)  # cycle through
 
-    with open(f"/data/{problem['filename']}", "r") as f:
+    with open(f"data/leetcode/{problem['filename']}", "r") as f:
         actual_file_content = f.read()  
 
     return {
