@@ -39,9 +39,7 @@ class GenerateRequest(BaseModel):
 @app.post("/generate")
 def generate_code(req: GenerateRequest):
 
-    load_model()
     global model, tokenizer
-
     if model is None or tokenizer is None:
         return {"error": "Model not loaded yet."}
 
@@ -89,4 +87,5 @@ def generate_code(req: GenerateRequest):
     return {"result": generated_text.strip()}
 
 if __name__ == "__main__":
+    load_model()
     uvicorn.run(app, host="0.0.0.0", port=8001)
