@@ -10,13 +10,10 @@ app = FastAPI(title="Qwen2.5-Coder Agent")
 model = None
 tokenizer = None
 
-
-@app.post("/load_model")
 def load_model():
     global model, tokenizer
 
     model_name = "Qwen/Qwen2.5-Coder-1.5B"
-    print(f"Loading model {model_name}...")
 
     tokenizer_local = AutoTokenizer.from_pretrained(
         model_name, 
@@ -41,6 +38,9 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate_code(req: GenerateRequest):
+
+    load_model()
+
     global model, tokenizer
 
     if model is None or tokenizer is None:
@@ -62,4 +62,4 @@ def generate_code(req: GenerateRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run("run_agent:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
