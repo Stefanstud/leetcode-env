@@ -5,7 +5,7 @@ from typing import Optional
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-app = FastAPI(title="Qwen2.5-Coder Agent")
+app = FastAPI(title="Qwen2.5-Coder")
 
 model = None
 tokenizer = None
@@ -13,7 +13,7 @@ tokenizer = None
 def load_model():
     global model, tokenizer
 
-    model_name = "Qwen/Qwen2.5-Coder-1.5B"
+    model_name = "Qwen/Qwen2.5-Coder-0.5B-Instruct"
 
     tokenizer_local = AutoTokenizer.from_pretrained(
         model_name, 
@@ -38,32 +38,53 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate_code(req: GenerateRequest):
+
     load_model()
     global model, tokenizer
 
     if model is None or tokenizer is None:
         return {"error": "Model not loaded yet."}
 
-    prompt = (
-        "You are a coding assistant. Please output only valid Python code "
-        "without extra explanation, docstrings or commented out code. "
-        f"Here is the problem:\n{req.prompt}\n"
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a coding assistant. Please output only valid Python code "
+                "without docstrings, extra commentary, or explanations. "
+                "Start directly with the code. Do not restate the question."
+            )
+        },
+        {
+            "role": "user",
+            "content": req.prompt 
+        }
+    ]
+
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
     )
 
-    inputs = tokenizer(prompt, return_tensors="pt")
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
 
     with torch.no_grad():
-        output_ids = model.generate(
-            **inputs,
-            max_length=req.max_length,
+        generated_ids = model.generate(
+            **model_inputs,
+            max_length=req.max_length or 256,
             do_sample=True,
-            temperature=req.temperature
+            temperature=req.temperature or 0.8
         )
 
-    generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-    return {"result": generated_text}
 
+    generated_ids = [
+        output_ids[len(input_ids):] 
+        for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+    ]
+
+    generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+    return {"result": generated_text.strip()}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
