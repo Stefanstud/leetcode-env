@@ -38,7 +38,6 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate_code(req: GenerateRequest):
-
     global model, tokenizer
     if model is None or tokenizer is None:
         return {"error": "Model not loaded yet."}
@@ -74,17 +73,23 @@ def generate_code(req: GenerateRequest):
             temperature=req.temperature or 0.8
         )
 
-
     generated_ids = [
         output_ids[len(input_ids):] 
         for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
     ]
 
     generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    # get the code starting from ```python
-    generated_text = generated_text.split("```python")[1]
-    # remove the ending ```
-    generated_text = generated_text.split("```")[0]
+    if "```python" in generated_text:
+        parts = generated_text.split("```python")
+        generated_text = parts[1] if len(parts) > 1 else parts[0]  
+        generated_text = generated_text.split("```")[0] 
+    else:
+        generated_text = generated_text.strip()
+        lines = generated_text.split("\n")
+        while lines and not lines[0].startswith("class"):
+            lines.pop(0)
+
+        generated_text = "\n".join(lines) 
 
     return {"result": generated_text.strip()}
 
