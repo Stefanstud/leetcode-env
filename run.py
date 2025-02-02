@@ -5,6 +5,25 @@ from typing import Optional
 from leetcode_client import LeetCodeClient
 import os
 
+PROBLEMS = [
+    {
+        "problem_slug": "add-two-numbers",
+        "question_id": "2",
+        "filename": "add-two-numbers.py",
+    },
+    {
+        "problem_slug": "two-sum",
+        "question_id": "1",
+        "filename": "two-sum.py",
+    },
+    {
+        "problem_slug": "longest-palindromic-substring",
+        "question_id": "5",
+        "filename": "longest-palindromic-substring.py",
+    },
+]
+current_index = 0
+
 class Settings(BaseSettings):
     leetcode_session: str = os.getenv("LEETCODE_SESSION")
     csrf_token: str = os.getenv("CSRF_TOKEN")
@@ -33,7 +52,6 @@ async def submit_solution(
 ):
     """Submit solution to LeetCode problem, with tokens passed in the body."""
     try:
-        # If the user provided them, use them; otherwise fallback to some default
         session_cookie = submission.session_cookie or "your_default_session"
         csrf = submission.csrf_token or "your_default_csrf"
 
@@ -64,6 +82,27 @@ async def submit_solution(
             detail=f"Submission failed: {str(e)}"
         )
 
+@app.get("/generate")
+def generate_problem():
+    """
+    Return the next problem from the local list (round-robin).
+    Every time this endpoint is called, we move to the next problem in PROBLEMS.
+    """
+    global current_index
+    if not PROBLEMS:
+        raise HTTPException(status_code=404, detail="No problems found.")
+
+    problem = PROBLEMS[current_index]
+    current_index = (current_index + 1) % len(PROBLEMS)  # cycle through
+
+    with open(f"/data/{problem['filename']}", "r") as f:
+        actual_file_content = f.read()  
+
+    return {
+        "problem_slug": problem["problem_slug"],
+        "question_id": problem["question_id"],
+        "task": actual_file_content,
+    }
 
 if __name__ == "__main__":
     import uvicorn
