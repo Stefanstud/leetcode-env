@@ -38,15 +38,19 @@ class GenerateRequest(BaseModel):
 
 @app.post("/generate")
 def generate_code(req: GenerateRequest):
-
     load_model()
-
     global model, tokenizer
 
     if model is None or tokenizer is None:
         return {"error": "Model not loaded yet."}
 
-    inputs = tokenizer(req.prompt, return_tensors="pt")
+    prompt = (
+        "You are a coding assistant. Please output only valid Python code "
+        "without extra explanation, docstrings or commented out code. "
+        f"Here is the problem:\n{req.prompt}\n"
+    )
+
+    inputs = tokenizer(prompt, return_tensors="pt")
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
     with torch.no_grad():
