@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 from typing import Optional
 from leetcode_client import LeetCodeClient
 import os
