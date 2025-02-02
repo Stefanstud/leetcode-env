@@ -83,6 +83,8 @@ def generate_code(req: GenerateRequest):
     generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
     # get the code starting from ```python
     generated_text = generated_text.split("```python")[1]
+    # remove the ending ```
+    generated_text = generated_text.split("```")[0]
 
     return {"result": generated_text.strip()}
 
