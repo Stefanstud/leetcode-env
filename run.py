@@ -4,18 +4,21 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 from leetcode_client import LeetCodeClient
 import os
+import json 
 
 PROBLEMS = []
 with open ("data/leetcode_questions_2023_08_08.json", "r") as f:
-    entry = f.read() 
+    data = json.load(f)
+
+for entry in data:
     PROBLEMS.append(
         {
-            "problem_slug": entry["title_slug"],
-            "question_id": entry["question_id"],
-            "content": entry["content"],
+            "problem_slug": data[entry]["title_slug"],
+            "question_id": data[entry]["question_id"],
+            "content": data[entry]["content"],
         }
     )
-    
+
 current_index = 0
 
 class Settings(BaseSettings):
