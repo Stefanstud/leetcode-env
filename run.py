@@ -5,23 +5,17 @@ from typing import Optional
 from leetcode_client import LeetCodeClient
 import os
 
-PROBLEMS = [
-    {
-        "problem_slug": "add-two-numbers",
-        "question_id": "2",
-        "filename": "add-two-numbers.py",
-    },
-    {
-        "problem_slug": "two-sum",
-        "question_id": "1",
-        "filename": "two-sum.py",
-    },
-    {
-        "problem_slug": "longest-palindromic-substring",
-        "question_id": "5",
-        "filename": "longest-palindromic-substring.py",
-    },
-]
+PROBLEMS = []
+with open ("data/leetcode_questions_2023_08_08.json", "r") as f:
+    entry = f.read() 
+    PROBLEMS.append(
+        {
+            "problem_slug": entry["title_slug"],
+            "question_id": entry["question_id"],
+            "content": entry["content"],
+        }
+    )
+    
 current_index = 0
 
 class Settings(BaseSettings):
@@ -95,13 +89,10 @@ def generate_problem():
     problem = PROBLEMS[current_index]
     current_index = (current_index + 1) % len(PROBLEMS)  # cycle through
 
-    with open(f"data/leetcode/{problem['filename']}", "r") as f:
-        actual_file_content = f.read()  
-
     return {
         "problem_slug": problem["problem_slug"],
         "question_id": problem["question_id"],
-        "task": actual_file_content,
+        "task": problem["content"],
     }
 
 if __name__ == "__main__":
